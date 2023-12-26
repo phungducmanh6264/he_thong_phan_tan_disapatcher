@@ -35,6 +35,8 @@ const sendResponseForInitRequest = (hostname) => {
 
 let lock = false;
 
+// Hàm này gọi 1s 1 lần để cập nhật lại trạng thái các server quá 1s mà không gửi request đến dispatcher thì
+// mặc định server đó đã chết, set trạng thái của server trên dispathcer là 0.
 setInterval(() => {
   if (lock) return;
   const _now = Date.now();
@@ -51,14 +53,14 @@ http
     const requestUrl = req.url;
     const urlObject = url.parse(requestUrl, true);
     const pathName = urlObject.pathname;
-
+    // ip của server gửi request
     const hostname = req.socket.remoteAddress.replace("::ffff:", "");
-
     const query = urlObject.query;
 
     res.writeHead(200, { "Content-Type": "text/plain" });
 
     switch (pathName) {
+      // Khi nhập IP trên fe và nhấn button thì server bên đó sẽ thực hiện test connect nếu thành công thì nó gửi thêm init server
       case "/test-connect": {
         if (!lock) {
           const _hostname = hostname;
@@ -75,6 +77,7 @@ http
         res.end("success");
         break;
       }
+      // Server call khi test connect thành công
       case "/init-server": {
         const _hostname = hostname;
         let _chuaCo = true;
@@ -96,11 +99,12 @@ http
         res.end(REQ_SUCCESS);
         break;
       }
+      // front end gọi server lấy thông tin all IP 1s 1 lần, server gọi đến đây
       case "/get-all-ip": {
         const _hostname = hostname;
         const _status = query.status;
         const _now = Date.now();
-
+        // set lại thời gian cuối server gửi request đến dispatcher
         for (let i = 0; i < IPServerList.length; i++) {
           if (IPServerList[i].hostname == _hostname) {
             IPServerList[i].time = _now;
@@ -108,6 +112,7 @@ http
             break;
           }
         }
+        // gửi all ip về cho server
         const _data = JSON.stringify(IPServerList);
         res.end(_data);
         break;
